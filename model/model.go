@@ -32,9 +32,9 @@ const (
 // banner, or - for tls - a short summary of the certificate presented
 // (subject/issuer/expiry).
 type Check struct {
-	// ID is internal-only (json:"-") - see checks.guid in the server's
-	// 0001_init.sql for why. The monitor never receives it and cannot use it
-	// to identify a check to the server; GUID is what crosses the wire.
+	// ID is internal-only (json:"-") - the monitor never receives it and
+	// cannot use it to identify a check to the server; GUID is what crosses
+	// the wire.
 	ID          int64  `json:"-"`
 	GUID        string `json:"guid"`
 	Name        string `json:"name"`
@@ -56,8 +56,8 @@ type Check struct {
 	// above (private-checks-design.md decision 2): it's part of the check's
 	// own verification logic, which the server never consumes for alerting or
 	// graphing - only the monitor's resulting Success bit does - so it is
-	// wiped by MarkPrivateDefinition and hidden on a private-definition
-	// check's edit page the same way the fields above are.
+	// wiped when the check becomes private-definition, and hidden on a
+	// private-definition check's edit page the same way the fields above are.
 	DisableRedirects bool `json:"disable_redirects,omitempty"`
 	// StatusCodeOp/StatusCodeValue replace the built-in "status >= 400
 	// fails" rule with an explicit one when StatusCodeOp is set - one of
@@ -78,12 +78,12 @@ type Check struct {
 	// Same content treatment as DisableRedirects above and for the same
 	// reason: it's part of the check's own verification logic, not
 	// something the server consumes for alerting or graphing, so it is
-	// wiped by MarkPrivateDefinition and hidden on a private-definition
-	// check's edit page the same way. Deliberately not part of the
-	// credential-guessing content group store.go's checkContentSnapshot
-	// tracks - it doesn't change what request goes out, only whether the
-	// response's certificate is trusted, so it adds no new guessing
-	// dimension for that group's server-side rate limit to bound.
+	// wiped when the check becomes private-definition, and hidden on a
+	// private-definition check's edit page the same way. Deliberately not
+	// part of the credential-guessing content group the server audits and
+	// rate-limits separately - it doesn't change what request goes out, only
+	// whether the response's certificate is trusted, so it adds no new
+	// guessing dimension for that group's server-side rate limit to bound.
 	InsecureSkipVerify bool `json:"insecure_skip_verify,omitempty"`
 	// InvertResult flips the check's pass/fail verdict, applied last - after
 	// the status-code, match, response-time and cert-expiry rules have all
@@ -92,13 +92,13 @@ type Check struct {
 	// service stays dead. Same content treatment as DisableRedirects above
 	// and for the same reason: it's part of the check's own verification
 	// logic, not something the server consumes for alerting or graphing, so
-	// it is wiped by MarkPrivateDefinition and hidden on a private-definition
-	// check's edit page the same way. Deliberately not part of the
-	// credential-guessing content group store.go's checkContentSnapshot
-	// tracks, same reasoning as InsecureSkipVerify above - it doesn't change
-	// what request goes out, only how the resulting verdict is interpreted,
-	// so it adds no new guessing dimension for that group's server-side rate
-	// limit to bound.
+	// it is wiped when the check becomes private-definition, and hidden on a
+	// private-definition check's edit page the same way. Deliberately not
+	// part of the credential-guessing content group the server audits and
+	// rate-limits separately, same reasoning as InsecureSkipVerify above -
+	// it doesn't change what request goes out, only how the resulting
+	// verdict is interpreted, so it adds no new guessing dimension for that
+	// group's server-side rate limit to bound.
 	InvertResult bool `json:"invert_result,omitempty"`
 	IntervalSec  int  `json:"interval_sec"`
 	// TimeoutSec bounds one execution of the check, between 1 and
@@ -110,8 +110,8 @@ type Check struct {
 	// own definition it cannot see, for no reason - the customer can set
 	// (and, on the shared fleet, we'd want to bound) it directly in the
 	// private monitor's own import file instead. Hidden on a private-
-	// definition check's edit page and wiped by MarkPrivateDefinition the
-	// same way DisableRedirects is.
+	// definition check's edit page and wiped when the check becomes
+	// private-definition, the same way DisableRedirects is.
 	TimeoutSec int `json:"timeout_sec,omitempty"`
 	// MaxResponseTimeMS is an optional constraint independent of TimeoutSec:
 	// when set, a response arriving after this many milliseconds fails the
@@ -134,12 +134,13 @@ type Check struct {
 	// content treatment as MaxResponseTimeMS/TimeoutSec above for a
 	// private-definition check: it's part of the check's own verification
 	// logic, not something the server consumes for alerting or graphing, so
-	// it is wiped by MarkPrivateDefinition and hidden on a private-definition
-	// check's edit page, settable only via -import-private-check from then
-	// on. Deliberately not part of the credential-guessing content group
-	// store.go's checkContentSnapshot tracks, same reasoning as
-	// InsecureSkipVerify above - it doesn't change what request goes out, only
-	// a threshold on how close to expiry a real response's certificate may be.
+	// it is wiped when the check becomes private-definition, and hidden on a
+	// private-definition check's edit page, settable only via
+	// -import-private-check from then on. Deliberately not part of the
+	// credential-guessing content group the server audits and rate-limits
+	// separately, same reasoning as InsecureSkipVerify above - it doesn't
+	// change what request goes out, only a threshold on how close to expiry
+	// a real response's certificate may be.
 	CertExpiryWarnDays int `json:"cert_expiry_warn_days,omitempty"`
 	// DownIntervalSec is how many seconds the check must be continuously
 	// failing - per the fixed rule of at least 2 distinct active monitors,
@@ -158,8 +159,8 @@ type Check struct {
 	// no non-zero fallback when unset, same "unset" convention as
 	// MaxResponseTimeMS/CertExpiryWarnDays: most checks want no repeat at
 	// all. Server-side only, same as DownIntervalSec - the monitor never
-	// consumes this, it only affects what Alerter.ProcessResults
-	// (server package) decides to send.
+	// consumes this; it only affects what the server's own alerting decides
+	// to send.
 	ResendIntervalSec int `json:"resend_interval_sec,omitempty"`
 	// ResultDetailMaxChars caps how many characters of Result.Error and
 	// Result.ResponseSample this check's results may carry (private-checks-
@@ -174,13 +175,12 @@ type Check struct {
 	Deleted              bool      `json:"deleted"`
 
 	// Whether this check may run on monitors its organisation does not control
-	// (see RestrictedURL). Three fields because the answer has two
-	// independent sources that must not overwrite each other - see the columns
-	// of the same names in the server's 0001_init.sql, and RestrictedURL below.
+	// (see RestrictedURL below). Three fields because the answer has two
+	// independent sources that must not overwrite each other.
 	//
 	// None of them crosses the wire: an agent is told which checks to run, not
 	// why, and the decision is the server's. They live on this struct only
-	// because it is the one the server's store reads and writes.
+	// because it is the one the server persists.
 	//
 	// RestrictedDerived is recomputed from URL on every write; callers setting
 	// it are ignored.
@@ -194,42 +194,34 @@ type Check struct {
 	Restricted bool `json:"-"`
 	// PrivateDefinition means the definition below has been wiped - url,
 	// match string, post data, headers all read "" - and lives only on
-	// whichever monitor(s) were given it out of band (see
-	// private-checks-design.md). One-way, set only by
-	// OrgStore.MarkPrivateDefinition; UpdateCheck refuses to let anything
-	// else clear it or rewrite what it wiped. Same treatment as the
-	// restricted trio: never crosses the wire.
+	// whichever monitor(s) were given it out of band. One-way: only the
+	// server can set it, and once set, an ordinary edit can't clear it or
+	// rewrite what it wiped. Same treatment as the restricted trio: never
+	// crosses the wire.
 	PrivateDefinition bool `json:"-"`
 	// AdminEnabled is the platform's own kill switch, independent of Enabled
 	// (the organisation's own bit, set from the check form). Never crosses
 	// the wire - the monitor is told the effective "should I run this"
-	// through Enabled itself (see ListChecksSince/ChecksForSharedMonitor in
-	// the server package, which fold enabled AND admin_enabled into the
-	// value they hand back as Enabled). Written only by
-	// Store.SetCheckAdminEnabled; every OrgStore write path (CreateCheck,
-	// UpdateCheck) leaves whatever is already on the struct alone, so an
-	// ordinary save can never clobber it - except duplicateCheck, which
-	// deliberately carries a source check's admin_enabled onto its copy via
-	// its own explicit call to SetCheckAdminEnabled.
+	// through Enabled itself, which the server folds this into before
+	// syncing. Only a platform action can change it; an ordinary save by the
+	// check's own owner leaves whatever is already on the struct alone, so it
+	// can't be clobbered that way.
 	//
-	// Trap for a future reader, the same one adminCheckColumns' own doc
-	// comment warns about: this is always false on a Check built by the
-	// server's org-facing scanCheck/checkColumns (store.go) - those
-	// deliberately never select admin_enabled, so a Check from ListChecks,
-	// GetCheck, or GetCheckByGUID always reads AdminEnabled false regardless
-	// of the row's real value. Only scanAdminCheckRow (admin.go) populates it
+	// Trap for a future reader: most of the server's own reads of a check
+	// deliberately don't populate this field at all, so a Check obtained
+	// through an ordinary (non-admin) read always has it false regardless of
+	// the stored value. Only the server's admin-facing read path populates it
 	// genuinely.
 	AdminEnabled bool `json:"-"`
-	// ShowOnStatusPage is the owner's opt-in to list this check on the
-	// org's public status page (/status/<slug>, server package's
-	// status_page.go) - never crosses the wire, since the monitor has no use
-	// for it. A display/publishing flag, not part of the content group
+	// ShowOnStatusPage is the owner's opt-in to list this check on the org's
+	// public status page - never crosses the wire, since the monitor has no
+	// use for it. A display/publishing flag, not part of the content group
 	// (URL/MatchString/PostData/Headers/StatusCodeValue): it stays editable
-	// on a private-definition check the same way IntervalSec does, and
-	// MarkPrivateDefinition leaves it alone. normalizeCheck (server
-	// package) forces it false whenever Restricted ends up true, so a check
-	// that only runs on the org's own monitors can never appear there even
-	// if this bit was set before it became restricted.
+	// on a private-definition check the same way IntervalSec does, and a
+	// check going private-definition leaves it alone. The server forces it
+	// false whenever Restricted ends up true, so a check that only runs on
+	// the org's own monitors can never appear there even if this bit was set
+	// before it became restricted.
 	ShowOnStatusPage bool `json:"-"`
 
 	// MonitorCount/MonitorRank are this check's round-robin scheduling facts
@@ -292,9 +284,9 @@ const (
 // Bounds for Check.DownIntervalSec; enforced at form validation. Its own
 // ceiling, more generous than MaxIntervalSec: it's how long a check must be
 // continuously failing before the first DOWN notification fires, which is a
-// question of alerting patience, not run frequency - interval_sec/
-// down_interval_sec are both BIGINT columns (0001_init.sql), so this needed
-// no storage change.
+// question of alerting patience, not run frequency - the server's storage
+// for both fields already had headroom for this, so it needed no schema
+// change.
 const (
 	DefaultDownIntervalSec = 60
 	MaxDownIntervalSec     = 30 * 24 * 3600

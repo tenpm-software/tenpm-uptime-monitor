@@ -6,8 +6,8 @@
 -- ListUnsent already scans all three straight into non-nullable Go fields
 -- with no guard, which only worked because that invariant happened to hold;
 -- stating it in the schema removes the possibility instead of leaving it
--- implicit. Same fix, same reasoning, as the server's matching change to
--- results/latest_results in internal/server/migrations/0001_init.sql.
+-- implicit. Same fix, same reasoning, as the server's own matching change to
+-- its equivalent columns.
 --
 -- SQLite has no ALTER COLUMN ... SET NOT NULL, so this is the standard
 -- rebuild: a fresh table with the tightened constraints, copy every row

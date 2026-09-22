@@ -105,12 +105,11 @@ func (p Policy) CheckAddr(addr netip.Addr) error {
 
 // pinnedDialer resolves a host, validates every address it resolved to, and then
 // dials **only those addresses** - model.PinnedDialContext's DNS-rebinding-
-// resistant pattern, shared with the server's own check-test dialer
-// (internal/server/checktest.go). This wrapper's only job is translating that
-// shared function's *model.RestrictedAddrError into this package's own
-// ErrBlocked, so existing callers here keep telling "we would not do that"
-// apart from "we tried and the network said no" the same way they always
-// have.
+// resistant pattern, shared with the server's own check-test dialer. This
+// wrapper's only job is translating that shared function's
+// *model.RestrictedAddrError into this package's own ErrBlocked, so existing
+// callers here keep telling "we would not do that" apart from "we tried and
+// the network said no" the same way they always have.
 func (p Policy) pinnedDialer() func(ctx context.Context, network, addr string) (net.Conn, error) {
 	return func(ctx context.Context, network, addr string) (net.Conn, error) {
 		conn, err := model.PinnedDialContext(ctx, network, addr)

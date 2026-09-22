@@ -169,9 +169,9 @@ var reservedRanges = []netip.Prefix{
 // RestrictedAddrError reports that a resolved address failed RestrictedAddr,
 // carrying the same reason. It exists as a type, not just an error string, so
 // a caller can tell "we refused to dial this" apart from "the network said
-// no" - the monitor package's pinnedDialer wraps it into its own ErrBlocked, and
-// internal/server's check-test dialer (checktest.go) just reads Reason
-// straight into the test's Failure field.
+// no" - the monitor package's pinnedDialer wraps it into its own ErrBlocked,
+// and the server's own check-test dialer reads Reason straight into its
+// result.
 type RestrictedAddrError struct{ Reason string }
 
 func (e *RestrictedAddrError) Error() string { return e.Reason }
@@ -182,12 +182,12 @@ func (e *RestrictedAddrError) Error() string { return e.Reason }
 // This is the DNS-rebinding-resistant pattern the package note above alludes
 // to ("the agent decides what it is willing to dial") - and it now serves
 // two dialers, not one: the shared fleet's egress policy
-// (monitor/egress.go's pinnedDialer, under PolicyStrict) and the
-// server's own outbound request on the check-test page (checktest.go),
-// which dials on a customer's behalf from our own network and needs the
-// exact same protection RestrictedURL alone cannot give it (RestrictedURL
-// only judges the host as written; a hostname's resolved address can differ
-// by the time of the actual connection).
+// (monitor/egress.go's pinnedDialer, under PolicyStrict) and the server's
+// own outbound request when it tests a check on a customer's behalf, which
+// dials from our own network and needs the exact same protection
+// RestrictedURL alone cannot give it (RestrictedURL only judges the host as
+// written; a hostname's resolved address can differ by the time of the
+// actual connection).
 //
 // A validate-then-dial-by-name design looks equivalent and is not: between
 // the two steps the name can be re-resolved, so a host that answered with a

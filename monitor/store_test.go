@@ -133,9 +133,8 @@ func TestApplyChecksDelta(t *testing.T) {
 // below is keyed on guid (`DELETE FROM checks WHERE guid = ?`), and model.
 // Check.ID never crosses the wire at all (json:"-"), so a Deleted row with
 // no guid deletes nothing - the local row survives forever. This is exactly
-// the shape internal/server/shared.go's scanSharedCheck used to produce for
-// a withdrawn or newly-restricted shared-fleet check before it was fixed to
-// preserve GUID; see that function's own doc comment.
+// the shape the server used to produce for a withdrawn or newly-restricted
+// shared-fleet check before that bug was fixed on the server side.
 func TestApplyChecksDeltaDeleteRequiresGUID(t *testing.T) {
 	s := newTestMonitorStore(t)
 

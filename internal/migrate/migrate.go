@@ -2,9 +2,8 @@
 // SQLite database, tracking which ones have run in a schema_migrations table.
 //
 // The monitor keeps its own SQLite file because it must run anywhere and
-// survive server outages on its own. The server's MySQL equivalent lives in
-// internal/servermigrate; the two are separate schemas with separate migration
-// sets.
+// survive server outages on its own. The server has its own, separate MySQL
+// migration runner for its own schema; the two never share migration sets.
 package migrate
 
 import (

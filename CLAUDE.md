@@ -33,9 +33,20 @@ every change there as if it will break something the moment it ships:
 **additive changes only** (a new optional field is fine; removing a field or
 changing what one means is not) until a real versioning scheme exists.
 
-README.md, SECURITY.md and CONTRIBUTING.md exist. CI does not yet — until
-it's set up, `go vet`/`gofmt -l`/`go test`/`golangci-lint` (see "Commands"
-below) are run by hand before anything is merged.
+README.md, SECURITY.md and CONTRIBUTING.md exist. `.github/workflows/ci.yml`
+runs build/vet/gofmt/test in one job and `golangci-lint` in a separate one
+(the two run in parallel, per the linter action's own recommendation), on
+every push to `main` and on pull requests — harmless to run on a PR even
+though none are accepted (see `CONTRIBUTING.md`), since it costs nothing and
+doesn't imply acceptance. `.github/workflows/release.yml` triggers on a `v*`
+tag: re-runs the test suite as a safety net (tag pushes don't hit `ci.yml`,
+whose trigger is branches-only), cross-compiles the three targets `make
+release`'s local equivalent produces (`GOOS=linux`, `amd64`/`arm64`/`armv7`,
+`CGO_ENABLED=0`), stamps the version the same way the manual build command
+in "Commands" below does, writes `sha256sum` checksums, and publishes a
+GitHub Release with `gh release create` — deliberately no third-party
+release action, to keep the trust surface of a workflow with
+`contents: write` to official actions plus the runner's preinstalled `gh`.
 
 ## Commands
 

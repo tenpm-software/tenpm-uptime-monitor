@@ -1,5 +1,7 @@
 # tenpm Uptime Monitor
 
+[![CI](https://github.com/tenpm-software/tenpm-uptime-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/tenpm-software/tenpm-uptime-monitor/actions/workflows/ci.yml)
+
 The open-source agent behind [tenpm Uptime](https://tenpmuptime.com)'s "bring
 your own agent" model: a single, self-contained binary you run on your own
 hardware — a spare server, a Raspberry Pi, a NAS — that polls a check

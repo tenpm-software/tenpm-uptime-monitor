@@ -1,0 +1,12 @@
+-- CertExpiryWarnDays is an optional constraint, meaningful only for https and
+-- tls checks (model.Check.CertExpiryWarnDays): the check fails once the
+-- presented certificate has this many days or fewer left before it expires,
+-- even though the handshake otherwise succeeded. 0 means no threshold, same
+-- convention as max_response_time_ms.
+--
+-- Content group from the start, same as insecure_skip_verify (0011) and
+-- disable_redirects/status_code_op (0010): it's part of this check's own
+-- verification logic, not something the server consumes for alerting or
+-- graphing, so it is wiped server-side for a private-definition check and
+-- must be supplied here via -import-private-check, same as match_string.
+ALTER TABLE checks ADD COLUMN cert_expiry_warn_days INTEGER NOT NULL DEFAULT 0;

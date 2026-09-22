@@ -1,0 +1,14 @@
+-- private-checks-design.md decision 5: how many characters of a result's
+-- error/response_sample this check may report, synced down from the server
+-- as an ordinary metadata field (ApplyChecksDelta always overwrites it, the
+-- same as interval_sec/timeout_sec/enabled - never content-guarded). The
+-- runner truncates/omits before buffering a result, so this is read on every
+-- check execution, not just at sync time.
+--
+-- Unlike 0006, existing rows need no wipe here: there is no uniqueness or
+-- NOT-NULL-without-a-default hazard, so a plain ADD COLUMN with a sensible
+-- default (1024, matching model.MaxResponseSampleLen - today's existing
+-- response_sample cap) leaves every already-mirrored check exactly as
+-- unbounded as it already behaved, until the next sync corrects it to
+-- whatever the server actually has on file.
+ALTER TABLE checks ADD COLUMN result_detail_max_chars INTEGER NOT NULL DEFAULT 1024;

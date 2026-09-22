@@ -1,0 +1,24 @@
+-- Tracks, per check, whether its *current* content (url, match_string,
+-- match_mode, post_data, headers) came from this machine's own
+-- -import-private-check rather than the server - the monitor-local half of
+-- private-checks-design.md decision 2. The server's own private_definition
+-- flag never crosses the wire (model.Check.PrivateDefinition is json:"-" -
+-- "an agent is told what it may run, not why"), so this is not a mirror of
+-- that column; it is this database's own record of where the content it is
+-- currently holding actually came from, kept in step by the same two write
+-- paths that already touch content:
+--
+--   Store.ImportPrivateCheck always sets it to 1 - importing is, by
+--   definition, supplying content the server didn't.
+--   Store.ApplyChecksDelta's content guard (0006/0007) sets it to 0 exactly
+--   when an ordinary sync's non-empty url overwrites local content - once the
+--   server has sent real content, this row is no longer locally-sourced,
+--   whatever it was before. When the guard instead preserves local content
+--   (an empty incoming url), this column is left alone too, for the same
+--   reason: nothing about the source of the content changed.
+--
+-- The result: -export-private-checks (cmd/monitor/main.go) can answer "which
+-- checks am I the sole source of truth for" by reading this column alone,
+-- with no need to ask the server or trust anything it said - the server was
+-- never told which checks these are in the first place.
+ALTER TABLE checks ADD COLUMN locally_defined INTEGER NOT NULL DEFAULT 0;

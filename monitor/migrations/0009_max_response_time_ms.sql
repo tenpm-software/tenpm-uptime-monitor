@@ -1,0 +1,11 @@
+-- Optional response-time constraint (model.Check.MaxResponseTimeMS): a
+-- response arriving after this many milliseconds fails the check even when
+-- it otherwise passed. Synced down as an ordinary metadata field, same as
+-- interval_sec/timeout_sec/enabled/result_detail_max_chars - never
+-- content-guarded, since it has nothing to do with a private-definition
+-- check's hidden url/match rule.
+--
+-- Default 0 (no threshold) leaves every already-mirrored check unconstrained
+-- until the next sync sets whatever the server actually has on file, same
+-- reasoning as 0007's default.
+ALTER TABLE checks ADD COLUMN max_response_time_ms INTEGER NOT NULL DEFAULT 0;

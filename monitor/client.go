@@ -26,6 +26,11 @@ func (e *APIError) Error() string {
 	return fmt.Sprintf("server returned %d: %s", e.Status, e.Body)
 }
 
+// apiPrefix is the versioned base path for every call this Client makes. A
+// single constant, not five separate literals, so a future API version
+// change touches one line.
+const apiPrefix = "/api/v1"
+
 // Client talks to the central server's monitor-facing JSON API: enroll, check
 // sync, result upload, status report and ping. The request and response bodies
 // are the types in the model package (api.go).
@@ -76,7 +81,7 @@ func (c *Client) Enroll(ctx context.Context, enrollmentToken, id, name, region, 
 		return "", "", fmt.Errorf("enroll: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/enroll", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+apiPrefix+"/enroll", bytes.NewReader(body))
 	if err != nil {
 		return "", "", fmt.Errorf("enroll: %w", err)
 	}
@@ -102,11 +107,11 @@ func (c *Client) Enroll(ctx context.Context, enrollmentToken, id, name, region, 
 	return er.MonitorID, er.APIKey, nil
 }
 
-// FetchChecks calls GET /api/checks?since=. Callers must store the returned
-// server time - not their own clock - as their new sync watermark, so clock
-// skew between server and monitor can't open a gap in the delta.
+// FetchChecks calls GET /api/v1/checks?since=. Callers must store the
+// returned server time - not their own clock - as their new sync watermark,
+// so clock skew between server and monitor can't open a gap in the delta.
 func (c *Client) FetchChecks(ctx context.Context, since time.Time) (serverTime time.Time, checks []model.Check, err error) {
-	url := fmt.Sprintf("%s/api/checks?since=%s", c.baseURL, model.FormatTimestamp(since))
+	url := fmt.Sprintf("%s%s/checks?since=%s", c.baseURL, apiPrefix, model.FormatTimestamp(since))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return time.Time{}, nil, fmt.Errorf("fetch checks: %w", err)
@@ -141,7 +146,7 @@ func (c *Client) PostResults(ctx context.Context, results []model.Result, report
 		return 0, fmt.Errorf("post results: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/results", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+apiPrefix+"/results", bytes.NewReader(body))
 	if err != nil {
 		return 0, fmt.Errorf("post results: %w", err)
 	}
@@ -172,7 +177,7 @@ func (c *Client) PostStatus(ctx context.Context, st model.MonitorStatus) error {
 		return fmt.Errorf("post status: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/api/status", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+apiPrefix+"/status", bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("post status: %w", err)
 	}
@@ -190,12 +195,12 @@ func (c *Client) PostStatus(ctx context.Context, st model.MonitorStatus) error {
 	return nil
 }
 
-// Ping calls GET /api/ping, the server's trivial authenticated heartbeat.
+// Ping calls GET /api/v1/ping, the server's trivial authenticated heartbeat.
 // Its purpose here is the connectivity gate's proxied probe (gate.go): a
 // cheap round trip that proves this agent's path to the server - proxy
 // included, if one is configured - is actually up.
 func (c *Client) Ping(ctx context.Context) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+"/api/ping", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, c.baseURL+apiPrefix+"/ping", nil)
 	if err != nil {
 		return fmt.Errorf("ping: %w", err)
 	}

@@ -157,7 +157,7 @@ to it, rather than assuming coverage lives elsewhere, whenever you touch
   - `gate.go` (`ConnectivityGate`) — dials independent anycast resolvers to
     tell "this box lost the internet" apart from "the target is actually
     down." `probeOverride` (wired from `agent.go` when `Config.ProxyURL` is
-    set) swaps that for an authenticated `GET /api/ping` through the same
+    set) swaps that for an authenticated `GET /api/v1/ping` through the same
     proxied client, since the anycast fanout means nothing from inside a
     network with no direct route out.
   - `proxy.go` (`ParseProxyURL`) — an optional proxy for this agent's own

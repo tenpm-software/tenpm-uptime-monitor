@@ -50,7 +50,7 @@ func newTestForwardProxy(t *testing.T) (proxyURL *url.URL, hits *atomic.Int32) {
 func newTestPingServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/api/ping" {
+		if r.URL.Path != "/api/v1/ping" {
 			http.NotFound(w, r)
 			return
 		}

@@ -532,7 +532,7 @@ func TruncateContent(content string, maxChars int) string {
 }
 
 // MonitorStatus is a monitor's self-reported health snapshot, sent
-// periodically to POST /api/status and shown on the Monitors page. It
+// periodically to POST /api/v1/status and shown on the Monitors page. It
 // carries the facts only the agent knows: how much is stuck in its local
 // buffer, what binary it runs, and how long it has been up (a repeatedly
 // low uptime reveals a crash loop that last_seen_at alone would hide).

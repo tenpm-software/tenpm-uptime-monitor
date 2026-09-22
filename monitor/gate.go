@@ -42,7 +42,7 @@ const (
 // used when this agent has a configured proxy (agent.go's Run, when
 // cfg.ProxyURL is non-nil): raw-TCP-dialing public anycast resolvers is
 // meaningless from inside a network with no direct route out, so the probe
-// becomes an authenticated GET /api/ping through the same proxied client
+// becomes an authenticated GET /api/v1/ping through the same proxied client
 // used for enroll/sync/report (client.go's Ping) instead. That changes what
 // "online" means, from "the public internet is reachable" to "my path to the
 // central server is reachable" - the relevant question for that topology -

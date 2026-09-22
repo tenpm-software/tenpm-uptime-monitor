@@ -167,7 +167,7 @@ func TestContractSyncUnauthorizedKeepsWatermark(t *testing.T) {
 
 func TestContractInitialSyncRetriesTransientFailure(t *testing.T) {
 	f := newFakeServer(t)
-	f.failNextCalls("/api/checks", 1, http.StatusServiceUnavailable)
+	f.failNextCalls("/api/v1/checks", 1, http.StatusServiceUnavailable)
 	store := newTestMonitorStore(t)
 	client := NewClient(f.URL)
 	client.SetAPIKey(f.apiKey)
@@ -178,7 +178,7 @@ func TestContractInitialSyncRetriesTransientFailure(t *testing.T) {
 	if err := syncer.WaitForInitialSync(ctx); err != nil {
 		t.Fatalf("initial sync should survive one 503, got %v", err)
 	}
-	if left := f.failNext["/api/checks"].remaining; left != 0 {
+	if left := f.failNext["/api/v1/checks"].remaining; left != 0 {
 		t.Fatalf("the scripted 503 was never hit (%d left), so no retry happened", left)
 	}
 	if len(f.checkSinces) != 1 {
@@ -233,7 +233,7 @@ func TestContractReportUploadsBufferedResults(t *testing.T) {
 // goes out unchanged on the next cycle.
 func TestContractReportRetriesAfterServerError(t *testing.T) {
 	f := newFakeServer(t)
-	f.failNextCalls("/api/results", 1, http.StatusInternalServerError)
+	f.failNextCalls("/api/v1/results", 1, http.StatusInternalServerError)
 	store := newTestMonitorStore(t)
 	if err := store.ApplyChecksDelta([]model.Check{
 		{GUID: "g1", Name: "A", URL: "https://a.example", IntervalSec: 30, Enabled: true},

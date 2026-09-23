@@ -44,7 +44,7 @@ CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -trimpath -o dist/monitor-l
 
    ```bash
    ./bin/monitor \
-     -server-url https://your-server \
+     -server-url https://tenpmuptime.com/ \
      -enrollment-token <paste from the UI> \
      -name "Sydney home box" \
      -region apac -country AU -city Sydney \

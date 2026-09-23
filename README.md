@@ -15,9 +15,15 @@ repository is the whole of the agent side.
 
 ## Install
 
-Prebuilt binaries (Linux amd64/arm64/armv7, CGO-free) are attached to each
-[release](https://github.com/tenpm-software/tenpm-uptime-monitor/releases)
-once tagged. Until then, build from source:
+Three ways, all the same agent:
+
+- **Prebuilt binaries** (Linux amd64/arm64/armv7, CGO-free) are attached to
+  each [release](https://github.com/tenpm-software/tenpm-uptime-monitor/releases),
+  with a `checksums.txt` to verify them against.
+- **A container image** for the same three platforms, published with each
+  release to `ghcr.io/tenpm-software/tenpm-uptime-monitor` — see
+  [Docker](#docker) below.
+- **From source:**
 
 ```bash
 git clone https://github.com/tenpm-software/tenpm-uptime-monitor.git
@@ -34,6 +40,34 @@ CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o dist/monitor-linux-a
 CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o dist/monitor-linux-arm64 ./cmd/monitor
 CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -trimpath -o dist/monitor-linux-armv7 ./cmd/monitor
 ```
+
+### Docker
+
+The image contains the release binary unchanged, runs as a non-root user,
+and keeps the agent's database on a `/data` volume:
+
+```bash
+docker run -d --name tenpm-monitor \
+  --restart unless-stopped \
+  -v tenpm-monitor-data:/data \
+  -e SERVER_URL=https://tenpmuptime.com/ \
+  -e ENROLLMENT_TOKEN=<paste from the UI> \
+  -e MONITOR_NAME="Sydney home box" \
+  -e REGION=apac -e COUNTRY=AU -e CITY=Sydney \
+  ghcr.io/tenpm-software/tenpm-uptime-monitor:latest
+```
+
+Pin a release tag (`:v0.3.0`) instead of `:latest` if you want updates to be
+deliberate. Use a **named volume** for `/data`, as above, rather than a bind
+mount: Docker gives a fresh named volume the image's ownership of `/data`,
+whereas a new bind-mounted host directory comes up owned by root and the
+agent can't write to it. The volume holds the monitor's identity, so
+recreating the container with the same volume (e.g. to update the image)
+resumes the same monitor instead of enrolling a new one.
+
+The CLI flags work against a running container too, e.g.
+`docker exec tenpm-monitor monitor -list-checks`, and `docker logs -f
+tenpm-monitor` shows the agent's output.
 
 ## Quickstart
 

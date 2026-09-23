@@ -47,6 +47,18 @@ in "Commands" below does, writes `sha256sum` checksums, and publishes a
 GitHub Release with `gh release create` — deliberately no third-party
 release action, to keep the trust surface of a workflow with
 `contents: write` to official actions plus the runner's preinstalled `gh`.
+A second job in the same workflow (`image`, `needs: release`, only
+`packages: write`) downloads those just-published binaries, verifies them
+against `checksums.txt`, and builds and pushes a multi-platform image
+(amd64/arm64/arm/v7) to `ghcr.io/tenpm-software/tenpm-uptime-monitor` —
+`:<tag>` always, `:latest` only for a plain `vX.Y.Z` tag — with the docker CLI
+directly, no `docker/*` actions, for the same reason. The root `Dockerfile`
+compiles nothing: it copies `dist/docker/<TARGETPLATFORM>/monitor` and has no
+`RUN` in its final stage, so no QEMU is needed. Two traps there: `ARG
+TARGETPLATFORM` must stay without a default (a default overrides BuildKit's
+per-platform value, and every platform silently gets the same binary), and
+the `monitor` user is pinned to uid 100 / gid 101 so existing `/data` volumes
+stay writable.
 
 ## Commands
 

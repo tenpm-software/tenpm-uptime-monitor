@@ -1,0 +1,3 @@
+# Only the laid-out release binaries are needed; see Dockerfile.
+*
+!dist/docker/

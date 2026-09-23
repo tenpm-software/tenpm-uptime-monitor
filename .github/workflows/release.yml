@@ -55,3 +55,71 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" dist/* \
             --title "${GITHUB_REF_NAME}" \
             --generate-notes
+
+  image:
+    name: Publish container image to GHCR
+    needs: release
+    runs-on: ubuntu-latest
+    # Tighter than the workflow default: this job only reads the release the
+    # job above published and pushes to GHCR - it never writes to the repo.
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      # Only the Dockerfile and .dockerignore are needed from the tree; the
+      # binaries come from the published release below, not a rebuild.
+      - uses: actions/checkout@v7
+
+      # Build the image from exactly what the release job published, verified
+      # against its own checksums.txt, so the image's binary is byte-for-byte
+      # the one a customer would download from the release page.
+      - name: Download release binaries
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p release
+          cd release
+          gh release download "${GITHUB_REF_NAME}" --repo "${GITHUB_REPOSITORY}"
+          sha256sum -c checksums.txt
+
+      # dist/docker/<TARGETPLATFORM>/monitor is the layout the Dockerfile's
+      # COPY expects (TARGETPLATFORM is e.g. linux/arm/v7).
+      - name: Lay out binaries per platform
+        run: |
+          install -D -m 755 release/monitor-linux-amd64 dist/docker/linux/amd64/monitor
+          install -D -m 755 release/monitor-linux-arm64 dist/docker/linux/arm64/monitor
+          install -D -m 755 release/monitor-linux-armv7 dist/docker/linux/arm/v7/monitor
+
+      # Labels cover each platform's image config; the index: annotations are
+      # what GHCR reads for a multi-platform image's package page.
+      # Plain docker CLI instead of the docker/* actions, for the same
+      # trust-surface reason as the release job above. The final image stage
+      # has no RUN, so no QEMU is needed for the non-amd64 platforms.
+      - name: Log in to GHCR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${GH_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+
+      - name: Build and push
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          tags=(-t "${image}:${GITHUB_REF_NAME}")
+          # Only a plain vX.Y.Z tag moves :latest - a pre-release like
+          # v1.2.0-rc1 is published under its own tag only.
+          if [[ "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            tags+=(-t "${image}:latest")
+          fi
+
+          docker buildx create --use
+          docker buildx build \
+            --platform linux/amd64,linux/arm64,linux/arm/v7 \
+            "${tags[@]}" \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.version=${GITHUB_REF_NAME}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --label "org.opencontainers.image.licenses=Apache-2.0" \
+            --annotation "index:org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --annotation "index:org.opencontainers.image.description=tenpm Uptime Monitor agent" \
+            --annotation "index:org.opencontainers.image.licenses=Apache-2.0" \
+            --push \
+            .

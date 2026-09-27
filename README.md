@@ -17,7 +17,8 @@ repository is the whole of the agent side.
 
 Three ways, all the same agent:
 
-- **Prebuilt binaries** (Linux amd64/arm64/armv7, CGO-free) are attached to
+- **Prebuilt binaries** (Linux amd64/arm64/armv7 and Windows amd64/arm64,
+  CGO-free) are attached to
   each [release](https://github.com/tenpm-software/tenpm-uptime-monitor/releases),
   with a `checksums.txt` to verify them against.
 - **A container image** for the same three platforms, published with each
@@ -39,6 +40,8 @@ CGO-free and cross-compiles cleanly:
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o dist/monitor-linux-amd64 ./cmd/monitor
 CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o dist/monitor-linux-arm64 ./cmd/monitor
 CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -trimpath -o dist/monitor-linux-armv7 ./cmd/monitor
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -o dist/monitor-windows-amd64.exe ./cmd/monitor
+CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -trimpath -o dist/monitor-windows-arm64.exe ./cmd/monitor
 ```
 
 ### Docker

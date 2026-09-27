@@ -40,10 +40,10 @@ every push to `main` and on pull requests — harmless to run on a PR even
 though none are accepted (see `CONTRIBUTING.md`), since it costs nothing and
 doesn't imply acceptance. `.github/workflows/release.yml` triggers on a `v*`
 tag: re-runs the test suite as a safety net (tag pushes don't hit `ci.yml`,
-whose trigger is branches-only), cross-compiles the three targets `make
-release`'s local equivalent produces (`GOOS=linux`, `amd64`/`arm64`/`armv7`,
-`CGO_ENABLED=0`), stamps the version the same way the manual build command
-in "Commands" below does, writes `sha256sum` checksums, and publishes a
+whose trigger is branches-only), cross-compiles the five targets `make
+release`'s local equivalent produces (`GOOS=linux` `amd64`/`arm64`/`armv7`,
+`GOOS=windows` `amd64`/`arm64` as `.exe`, `CGO_ENABLED=0`), stamps the
+version the same way the manual build command in "Commands" below does, writes `sha256sum` checksums, and publishes a
 GitHub Release with `gh release create` — deliberately no third-party
 release action, to keep the trust surface of a workflow with
 `contents: write` to official actions plus the runner's preinstalled `gh`.
@@ -79,6 +79,8 @@ is pure Go):
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o dist/monitor-linux-amd64 ./cmd/monitor
 CGO_ENABLED=0 GOOS=linux GOARCH=arm64 go build -trimpath -o dist/monitor-linux-arm64 ./cmd/monitor
 CGO_ENABLED=0 GOOS=linux GOARCH=arm GOARM=7 go build -trimpath -o dist/monitor-linux-armv7 ./cmd/monitor
+CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -trimpath -o dist/monitor-windows-amd64.exe ./cmd/monitor
+CGO_ENABLED=0 GOOS=windows GOARCH=arm64 go build -trimpath -o dist/monitor-windows-arm64.exe ./cmd/monitor
 ```
 
 `-ldflags "-X github.com/tenpm-software/tenpm-uptime-monitor/internal/version.Version=$(git describe --tags --always --dirty)"`

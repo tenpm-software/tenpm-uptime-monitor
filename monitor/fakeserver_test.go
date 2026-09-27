@@ -59,11 +59,11 @@ func newFakeServer(t *testing.T) *fakeServer {
 		failNext:    map[string]failure{},
 	}
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/v1/enroll", f.handleEnroll)
-	mux.HandleFunc("GET /api/v1/checks", f.authed(f.handleChecks))
-	mux.HandleFunc("POST /api/v1/results", f.authed(f.handleResults))
-	mux.HandleFunc("POST /api/v1/status", f.authed(f.handleStatus))
-	mux.HandleFunc("GET /api/v1/ping", f.authed(func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("POST /monitor-api/v1/enroll", f.handleEnroll)
+	mux.HandleFunc("GET /monitor-api/v1/checks", f.authed(f.handleChecks))
+	mux.HandleFunc("POST /monitor-api/v1/results", f.authed(f.handleResults))
+	mux.HandleFunc("POST /monitor-api/v1/status", f.authed(f.handleStatus))
+	mux.HandleFunc("GET /monitor-api/v1/ping", f.authed(func(w http.ResponseWriter, r *http.Request) {
 		writeFakeJSON(w, map[string]string{"status": "ok"})
 	}))
 	f.Server = httptest.NewServer(mux)

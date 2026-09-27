@@ -29,7 +29,14 @@ func (e *APIError) Error() string {
 // apiPrefix is the versioned base path for every call this Client makes. A
 // single constant, not five separate literals, so a future API version
 // change touches one line.
-const apiPrefix = "/api/v1"
+//
+// Moved from "/api/v1" to "/monitor-api/v1" - the server added a second,
+// separate customer-facing API and needed the monitor's own path out of the
+// way to avoid a route collision, so the monitor API got a distinct prefix
+// rather than a segment under a shared one. The server temporarily serves
+// both prefixes side by side during the fleet's migration window; this
+// module only ever needs to speak the current one.
+const apiPrefix = "/monitor-api/v1"
 
 // Client talks to the central server's monitor-facing JSON API: enroll, check
 // sync, result upload, status report and ping. The request and response bodies
@@ -107,7 +114,7 @@ func (c *Client) Enroll(ctx context.Context, enrollmentToken, id, name, region, 
 	return er.MonitorID, er.APIKey, nil
 }
 
-// FetchChecks calls GET /api/v1/checks?since=. Callers must store the
+// FetchChecks calls GET /monitor-api/v1/checks?since=. Callers must store the
 // returned server time - not their own clock - as their new sync watermark,
 // so clock skew between server and monitor can't open a gap in the delta.
 func (c *Client) FetchChecks(ctx context.Context, since time.Time) (serverTime time.Time, checks []model.Check, err error) {
@@ -195,7 +202,7 @@ func (c *Client) PostStatus(ctx context.Context, st model.MonitorStatus) error {
 	return nil
 }
 
-// Ping calls GET /api/v1/ping, the server's trivial authenticated heartbeat.
+// Ping calls GET /monitor-api/v1/ping, the server's trivial authenticated heartbeat.
 // Its purpose here is the connectivity gate's proxied probe (gate.go): a
 // cheap round trip that proves this agent's path to the server - proxy
 // included, if one is configured - is actually up.

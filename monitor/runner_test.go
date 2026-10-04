@@ -538,3 +538,95 @@ func TestRunnerNeverProbesOnNonTransportFailure(t *testing.T) {
 		t.Fatalf("gate went offline, so a probe ran on a non-transport failure")
 	}
 }
+
+// urlRecordingChecker remembers the URL of the most recent check it was
+// asked to run, so a test can see which definition an execution used.
+type urlRecordingChecker struct {
+	mu   sync.Mutex
+	urls []string
+}
+
+func (c *urlRecordingChecker) Run(_ context.Context, check model.Check) model.Result {
+	c.mu.Lock()
+	c.urls = append(c.urls, check.URL)
+	c.mu.Unlock()
+	return model.Result{CheckGUID: check.GUID, RanAt: time.Now().UTC(), Success: true}
+}
+
+func (c *urlRecordingChecker) ran(url string) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for _, u := range c.urls {
+		if u == url {
+			return true
+		}
+	}
+	return false
+}
+
+// A content edit (here the URL) that arrives through a sync must reach the
+// running check. Regression: the runner used to restart a check's goroutine
+// only when interval_sec/monitor_count/monitor_rank changed, so the
+// goroutine kept executing the definition it started with and an edited URL
+// was ignored until the agent restarted.
+func TestRunnerPicksUpEditedCheckContentWithoutRestart(t *testing.T) {
+	s := newTestMonitorStore(t)
+	checker := &urlRecordingChecker{}
+	logger := slog.New(slog.NewTextHandler(io.Discard, nil))
+	runner := NewRunner(s, checker, nil, testRunnerRefreshInterval, DefaultRunnerConcurrency, logger)
+
+	check := model.Check{GUID: "edited", Name: "edited", URL: "http://old.example/healthz", MatchString: "ok",
+		IntervalSec: 1, MonitorCount: 1, MonitorRank: 0, Enabled: true}
+	if err := s.ApplyChecksDelta([]model.Check{check}, time.Now().UTC()); err != nil {
+		t.Fatalf("seed check: %v", err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go runner.Run(ctx)
+
+	if err := waitFor(3*time.Second, func() bool { return checker.ran("http://old.example/healthz") }); err != nil {
+		t.Fatalf("expected the original definition to run: %v", err)
+	}
+
+	check.URL = "http://new.example/healthz"
+	if err := s.ApplyChecksDelta([]model.Check{check}, time.Now().UTC()); err != nil {
+		t.Fatalf("apply edited check: %v", err)
+	}
+
+	if err := waitFor(5*time.Second, func() bool { return checker.ran("http://new.example/healthz") }); err != nil {
+		t.Fatalf("edited URL never ran - the runner is still executing the stale definition: %v", err)
+	}
+}
+
+func TestSameDefinition(t *testing.T) {
+	base := model.Check{GUID: "g", URL: "http://x", IntervalSec: 30, Headers: map[string]string{"A": "1"}, Enabled: true}
+
+	touched := base
+	touched.UpdatedAt = time.Now().UTC()
+	if !sameDefinition(base, touched) {
+		t.Error("a check differing only in UpdatedAt must count as unchanged")
+	}
+
+	sameHeaders := base
+	sameHeaders.Headers = map[string]string{"A": "1"}
+	if !sameDefinition(base, sameHeaders) {
+		t.Error("equal header maps must count as unchanged")
+	}
+
+	for name, mutate := range map[string]func(*model.Check){
+		"url":      func(c *model.Check) { c.URL = "http://y" },
+		"match":    func(c *model.Check) { c.MatchString = "ok" },
+		"headers":  func(c *model.Check) { c.Headers = map[string]string{"A": "2"} },
+		"timeout":  func(c *model.Check) { c.TimeoutSec = 5 },
+		"interval": func(c *model.Check) { c.IntervalSec = 60 },
+		"rank":     func(c *model.Check) { c.MonitorRank = 1 },
+		"invert":   func(c *model.Check) { c.InvertResult = true },
+	} {
+		changed := base
+		mutate(&changed)
+		if sameDefinition(base, changed) {
+			t.Errorf("a change to %s must count as a different definition", name)
+		}
+	}
+}

@@ -9,6 +9,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/cookiejar"
+	"reflect"
 	"strings"
 	"sync"
 	"time"
@@ -317,13 +318,31 @@ func (r *Runner) triggerFlush() {
 
 // scheduledCheck tracks the per-check goroutine currently running a check,
 // so Run can tell whether a check is new, unchanged, removed, or resynced
-// with different scheduling facts (interval_sec, or - check-scheduling-
-// plan.md - monitor_count/monitor_rank).
+// with a different definition.
+//
+// check is the exact definition that goroutine was started with: scheduleLoop
+// receives it by value and runs that copy for as long as it lives, so any
+// difference between it and what the store holds now - not just the
+// scheduling facts (interval_sec, check-scheduling-plan.md's
+// monitor_count/monitor_rank) but the URL, match string, headers, timeout,
+// and so on - means the goroutine is running something stale and has to be
+// restarted. Comparing only the scheduling facts, as this used to, let an
+// edit to a check's URL sync into the store and then be ignored until the
+// agent was restarted.
 type scheduledCheck struct {
-	cancel       context.CancelFunc
-	intervalSec  int
-	monitorCount int
-	monitorRank  int
+	cancel context.CancelFunc
+	check  model.Check
+}
+
+// sameDefinition reports whether two copies of a check would run
+// identically. UpdatedAt is excluded: the server bumps it for reasons that
+// change nothing this agent executes (a sibling monitor enrolling, an admin
+// toggle), and restarting every goroutine on each of those would be churn
+// for no behavioral difference. Compared with reflect.DeepEqual because
+// Headers is a map.
+func sameDefinition(a, b model.Check) bool {
+	a.UpdatedAt, b.UpdatedAt = time.Time{}, time.Time{}
+	return reflect.DeepEqual(a, b)
 }
 
 // Run reconciles the scheduled checks against the store every
@@ -363,16 +382,18 @@ func (r *Runner) reconcile(ctx context.Context, scheduled map[int64]scheduledChe
 		seen[c.ID] = true
 		sc, alreadyScheduled := scheduled[c.ID]
 		if alreadyScheduled {
-			if sc.intervalSec == c.IntervalSec && sc.monitorCount == c.MonitorCount && sc.monitorRank == c.MonitorRank {
+			if sameDefinition(sc.check, c) {
 				continue
 			}
-			sc.cancel() // scheduling facts changed; restart on the new cadence
+			sc.cancel() // definition or scheduling facts changed; restart with the new one
 		}
 		checkCtx, cancel := context.WithCancel(ctx)
-		scheduled[c.ID] = scheduledCheck{cancel: cancel, intervalSec: c.IntervalSec, monitorCount: c.MonitorCount, monitorRank: c.MonitorRank}
+		scheduled[c.ID] = scheduledCheck{cancel: cancel, check: c}
 		// Run immediately only for a check this Runner has never scheduled
 		// before in its own lifetime, not for a restart triggered by a
-		// changed interval_sec/monitor_count/monitor_rank - see
+		// changed definition (interval_sec/monitor_count/monitor_rank, or
+		// content such as the URL - the edited check simply takes effect at
+		// its next slot) - see
 		// check-scheduling-plan.md's "Other open questions": a monitor
 		// enrolling or dropping out changes monitor_count/monitor_rank for
 		// every check assigned to it at once, and an immediate re-run on

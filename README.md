@@ -1,11 +1,11 @@
-# tenpm Uptime Monitor
+# 10pm uptime monitor
 
 [![CI](https://github.com/tenpm-software/tenpm-uptime-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/tenpm-software/tenpm-uptime-monitor/actions/workflows/ci.yml)
 
-The open-source agent behind [tenpm Uptime](https://10pmuptime.com)'s "bring
+The open-source agent behind [10pm uptime](https://10pmuptime.com)'s "bring
 your own agent" model: a single, self-contained binary you run on your own
 hardware — a spare server, a Raspberry Pi, a NAS — that polls a check
-schedule from your tenpm account's central server and reports results back.
+schedule from your 10pm uptime account's central server and reports results back.
 The agent is public and auditable on purpose: no telemetry beyond what it's
 explicitly configured to check, and nothing here can reach anything but the
 server it's pointed at and the targets you told it to check.
@@ -74,7 +74,7 @@ tenpm-monitor` shows the agent's output.
 
 ## Quickstart
 
-1. In your tenpm account, open **Monitors → Add a monitor**. This gives you
+1. In your 10pm uptime account, open **Monitors → Add a monitor**. This gives you
    your server's base URL and mints a one-time enrollment token (shown once —
    the server only ever stores its hash, so if you lose it, mint another).
 2. Run the agent:

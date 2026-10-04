@@ -121,7 +121,7 @@ jobs:
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --label "org.opencontainers.image.licenses=Apache-2.0" \
             --annotation "index:org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
-            --annotation "index:org.opencontainers.image.description=tenpm Uptime Monitor agent" \
+            --annotation "index:org.opencontainers.image.description=10pm uptime monitor agent" \
             --annotation "index:org.opencontainers.image.licenses=Apache-2.0" \
             --push \
             .

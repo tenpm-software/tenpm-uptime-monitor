@@ -12,7 +12,7 @@ it won't be merged, however good it is.
 ## What we do want to hear
 
 Comments and feature requests for the service this agent connects to,
-[tenpm Uptime](https://10pmuptime.com), are genuinely welcome. Open an
+[10pm uptime](https://10pmuptime.com), are genuinely welcome. Open an
 [issue](https://github.com/tenpm-software/tenpm-uptime-monitor/issues) for:
 
 - a feature you'd like to see, in the agent or in the service as a whole;

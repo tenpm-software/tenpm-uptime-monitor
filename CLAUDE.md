@@ -5,7 +5,7 @@ code in this repository.
 
 ## What this is
 
-**tenpm-uptime-monitor** — the open-source agent for tenpm's uptime
+**tenpm-uptime-monitor** — the open-source agent for 10pm uptime's
 monitoring SaaS. A single binary you run anywhere (your own server, a
 Raspberry Pi, a NAS) that polls a check schedule from a closed-source central
 server and reports results back over a small JSON API. "Bring your own

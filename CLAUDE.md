@@ -16,7 +16,7 @@ server it's pointed at and the targets it's told to check.
 Apache-2.0 licensed. **Not open to outside code contributions at this time**
 (see `CONTRIBUTING.md`): no PR process, no CI gating one, no contributor
 agreement in place. Feature requests and feedback on the service at
-tenpmuptime.com are welcome via issues; code changes are not.
+10pmuptime.com are welcome via issues; code changes are not.
 
 ## Working in this repo
 

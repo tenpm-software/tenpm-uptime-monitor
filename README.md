@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/tenpm-software/tenpm-uptime-monitor/actions/workflows/ci.yml/badge.svg)](https://github.com/tenpm-software/tenpm-uptime-monitor/actions/workflows/ci.yml)
 
-The open-source agent behind [tenpm Uptime](https://tenpmuptime.com)'s "bring
+The open-source agent behind [tenpm Uptime](https://10pmuptime.com)'s "bring
 your own agent" model: a single, self-contained binary you run on your own
 hardware — a spare server, a Raspberry Pi, a NAS — that polls a check
 schedule from your tenpm account's central server and reports results back.
@@ -53,7 +53,7 @@ and keeps the agent's database on a `/data` volume:
 docker run -d --name tenpm-monitor \
   --restart unless-stopped \
   -v tenpm-monitor-data:/data \
-  -e SERVER_URL=https://tenpmuptime.com/ \
+  -e SERVER_URL=https://10pmuptime.com/ \
   -e ENROLLMENT_TOKEN=<paste from the UI> \
   -e MONITOR_NAME="Sydney home box" \
   -e REGION=apac -e COUNTRY=AU -e CITY=Sydney \
@@ -81,7 +81,7 @@ tenpm-monitor` shows the agent's output.
 
    ```bash
    ./bin/monitor \
-     -server-url https://tenpmuptime.com/ \
+     -server-url https://10pmuptime.com/ \
      -enrollment-token <paste from the UI> \
      -name "Sydney home box" \
      -region apac -country AU -city Sydney \
